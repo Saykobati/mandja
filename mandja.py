@@ -61,10 +61,6 @@ def main():
     
     main_url = arguments.url
     
-    a = "\x05\x00"
-    s = "Bizarre socks5 response: {resp}".format(resp = repr(a))
-    print s
-    
     
     #rsp = headPing(main_url)
     #print rsp.status, rsp.reason

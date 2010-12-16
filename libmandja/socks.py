@@ -2,7 +2,7 @@ import socket
 import struct
 import sys
 from libmandja.common import isint
-from libmandja.common import isipaddr
+from libmandja.common import isip4addr
 
 class Proxy(object):
     _socksip = '127.0.0.1'
@@ -13,7 +13,7 @@ class Proxy(object):
         err_wrong_socksver = "Wrong socks version: '{ver}'"\
                              .format(ver = socksver)
         
-        if isipaddr(socksip):
+        if isip4addr(socksip):
             self._socksip = socksip
         
         if isint(socksport):
@@ -79,7 +79,7 @@ class Proxy(object):
         reqheader = struct.pack("!BBBB",version, command, rsv, atype)
         portstr = struct.pack("!H",port)
         
-        return "%s%s\0%s"%(reqheader,hostname,port)
+        return "%s%s\0%s"%(reqheader,hostname,portstr)
     
     @staticmethod
     def socks5ParseResponse(response):

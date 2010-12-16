@@ -12,7 +12,7 @@ def isint(value):
     return result
 
 
-def isipaddr(ip_str):
+def isip4addr(ip_str):
     if not isinstance(ip_str, str):
         return False
     
