@@ -1,3 +1,4 @@
+import hashlib
 import re
 
 def isint(value):
@@ -25,3 +26,12 @@ def isip4addr(ip_str):
         return True
     else:
         return False
+
+def removeWWW(data):
+    return re.sub('^([\s]*?)www\.', '', data)
+
+def md5bin(data):
+    return hashlib.md5().update(data).digest()
+
+def md5str(data):
+    return hashlib.md5().update(data).hexdigest()
