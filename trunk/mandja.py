@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-from libmandja.cmdline import cmdlineParse
+from libmandja.cmdline import MandjaCmdlineParser
 from libmandja.crawler import Crawl
 
 def main():
-    arguments = cmdlineParse()
+    arguments = MandjaCmdlineParser()
     main_url = arguments.url
     
     cr_ob = Crawl(main_url)
