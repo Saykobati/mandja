@@ -1,4 +1,11 @@
 import socket
+
+#import StringIO
+#import gzip
+#import re
+#
+#import pycurl
+
 import httplib2
 import urllib2
 from restkit import request
