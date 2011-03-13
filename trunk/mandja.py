@@ -49,8 +49,6 @@ def main():
     main_url = arguments.url
     
     cr_ob = Crawler(main_url)
-    #i = cr_ob.getContent(main_url, True)
-    #print repr(i)
     cr_ob.startCrawl()
 
 
