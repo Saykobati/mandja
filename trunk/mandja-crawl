@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+#-*- coding: utf-8 -*-
+
+
+import argparse
+
+from mandja.crawler import Crawler
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description=('A little recursive crawler. '
+                                                  'It is able to list all URLs it has visited. '
+                                                  'You reuse the connection via Keep-Connection when'
+                                                  'crawling on the set domain and use different connections'
+                                                  'for the head ping of URLs on different domains.'),
+                                     epilog='Copyright (C) 2011 Plamen Valov')
+    parser.add_argument("url",
+                        help="URL to crawl")
+
+    args = parser.parse_args()
+
+    return args
+
+
+def main():
+    args = get_args()
+    main_url = args.url
+    
+    cr_ob = Crawler(main_url)
+    cr_ob.startCrawl()
+
+
+if(__name__=="__main__"):
+    main()

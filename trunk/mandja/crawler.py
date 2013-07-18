@@ -23,15 +23,15 @@ from urlparse import urlparse
 from urlparse import ParseResult
 import pycurl
 
-from libmandja.common import removeWWW
-from libmandja.parser import getURLs
-from libmandja.parser import isContentTypeText
-from libmandja.parser import parseHeaders
-from libmandja.parser import extractHtmlEncoding
+from .common import removeWWW
+from .parser import getURLs
+from .parser import isContentTypeText
+from .parser import parseHeaders
+from .parser import extractHtmlEncoding
 
-from libmandja.exception import mandjaCrawlerError
-from libmandja.exception import mandjaCrawlerURLError
-from libmandja.exception import mandjaCrawlerContentError
+from .exception import mandjaCrawlerError
+from .exception import mandjaCrawlerURLError
+from .exception import mandjaCrawlerContentError
 
 
 class Buffer:
