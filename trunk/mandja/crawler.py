@@ -73,7 +73,8 @@ class Crawler(object):
         self._not_checked_url_pool = set()
 
     def _url_to_abs_url(self, url_str, default_netloc):
-        url = urlparse(url_str, self._start_scheme)
+        us = url_str.replace("&amp;", "&")
+        url = urlparse(us, self._start_scheme)
 
         if not url.netloc:
             netloc = default_netloc
