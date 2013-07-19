@@ -13,7 +13,7 @@ def get_args():
                                                   'You reuse the connection via Keep-Connection when'
                                                   'crawling on the set domain and use different connections'
                                                   'for the head ping of URLs on different domains.'),
-                                     epilog='Copyright (C) 2011 Plamen Valov')
+                                     epilog='Copyright (C) 2011 MrGray')
     parser.add_argument("url",
                         help="URL to crawl")
 
@@ -25,10 +25,12 @@ def get_args():
 def main():
     args = get_args()
     main_url = args.url
-    
+
     cr_ob = Crawler(main_url)
-    cr_ob.startCrawl()
+    for url_info in cr_ob.start_crawl():
+        if(url_info.from_domain):
+            print "%s        |        %s" % (url_info.url, url_info.status_msg)
 
 
-if(__name__=="__main__"):
+if(__name__ == "__main__"):
     main()
