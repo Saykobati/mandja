@@ -16,41 +16,13 @@
 
 
 __all__ = [
-    "get_urls",
     "extract_html_encoding",
-    "is_content_type_text"
+    "is_content_type_text",
+    "UrlParser"
 ]
 
 
 import re
-
-
-_url_patterns = [u'(?:(?:href|src)\=)(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)',
-                 u'(?:url\()(?P<url_string>[^\s]*?)(?:\))']
-
-_text_content_type_patterns = ['text|javascript|css|html|xhtml|xml']
-
-
-# def get_urls(data):
-#     url_regex_chain = [itr for itr in
-#                        (re.finditer(ptr, data, re.MULTILINE | re.DOTALL | re.IGNORECASE)
-#                         for ptr in _url_patterns)]
-#     all_urls = set()
-
-#     for i in url_regex_chain:
-#         for j in i:
-#             all_urls.add(j.group('url_string').strip())
-
-#     return all_urls
-
-
-def get_urls(data):
-    all_urls = set()
-    for i in re.finditer(_url_patterns[0], data, re.MULTILINE | re.DOTALL | re.IGNORECASE):
-        if(i):
-            all_urls.add(i.group("url_string"))
-
-    return all_urls
 
 
 def extract_html_encoding(html):
@@ -68,7 +40,35 @@ def extract_html_encoding(html):
 
 
 def is_content_type_text(content_type_data):
-    for txt_ptr in _text_content_type_patterns:
+    text_content_type_patterns = ['text|javascript|css|html|xhtml|xml']
+
+    for txt_ptr in text_content_type_patterns:
         if re.search(txt_ptr, content_type_data):
             return True
+
     return False
+
+
+class UrlParser(object):
+    patterns = {"a-href": re.compile(u'\<[\s]*a.*[\s]+href\=(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)'),
+                "link-href": re.compile(u'\<[\s]*link.*[\s]+href\=(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)'),
+                "script-src": re.compile(u'\<[\s]*script.*[\s]+src\=(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)'),
+                "img-src": re.compile(u'\<[\s]*img.*[\s]+src\=(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)'),
+                "form-action": re.compile(u'\<[\s]*form.*[\s]+action\=(?P<quotes>"|\')(?P<url_string>[^\s]*?)(?P=quotes)'),
+                "css-url": re.compile(u'url\([\s"\']*(?P<url_string>[^\s"\']*)'),
+                "sick-match": re.compile(u'(?P<url_string>http[^\s"\']*)'),
+                }
+
+    def __init__(self, extract_options):
+        self.extract_options = extract_options
+
+    def url_gen(self, data):
+        parsed_urls = []
+        for i in self.extract_options:
+            if(i in self.patterns):
+                for urlrex in self.patterns[i].finditer(data, re.MULTILINE | re.DOTALL | re.IGNORECASE):
+                    if(urlrex):
+                        url = urlrex.group('url_string')
+                        if(url not in parsed_urls):
+                            yield url
+                            parsed_urls.append(url)

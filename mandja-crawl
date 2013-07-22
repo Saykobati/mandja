@@ -2,9 +2,14 @@
 #-*- coding: utf-8 -*-
 
 
+import sys
 import argparse
+import tempfile
+import re
 
 from mandja.crawler import Crawler
+from mandja.parser import UrlParser
+from mandja.session import Session
 
 
 def get_args():
@@ -16,21 +21,102 @@ def get_args():
                                      epilog='Copyright (C) 2011 MrGray')
     parser.add_argument("url",
                         help="URL to crawl")
+    parser.add_argument("-s", "--session-file",
+                        help=("If a session file is used - all the data from URL processing is saved "
+                              "including the current state. If the crawling is interrupted you can "
+                              "continue later using the session file. When crawleing has finished, "
+                              "this state is marked also. By using the file you can filter/parse/extract data"
+                              "related to the crawled URL offline."))
+    parser.add_argument("-g", "--go-regex",
+                        default="^.+$",
+                        help=("Pre-visit regex filter to determine if an URL is permitted to be crawled"))
+    parser.add_argument("-u", "--visit-regex",
+                        default="^.+$",
+                        help=("A regex which is used over extracted URLs to determine "
+                              "if it has been visited. This way a 'visited' mask is formed"))
+    parser.add_argument("-e", "--extract-option",
+                        action="append",
+                        default=["a-href"],
+                        choices=["a-href", "link-href", "script-src", "form-action", "sick-match"],
+                        help=("These options present the type of extraction filter used to determine which URLs should be extracted. "
+                              "This is used on the crawling phase - if you miss an option you would not visit the kind of URLs. "
+                              "The default is: ['a-href']. "
+                              "The meaning of options is: 'a-href' - visit URLs gathered from <a href=\"..\"> tags, "
+                              "'link-href' - URLs from <link src=\"..\">, "
+                              "'form-action' - URLs from <form action=\"..\">, "
+                              "'sick-match' - using a sick general regex to finde anything looking like an URL"))
+    parser.add_argument("-o", "--output-fields",
+                        default=["url", "status"],
+                        choices=["url", "status"],
+                        help=("This presents the information that is outputed on the screen. "
+                              "Default is: ['url', 'status']"))
+    parser.add_argument("-f", "--output-filter",
+                        action="append",
+                        help=("You can add filters for the screen output by specifying them in "
+                              "the format: place=<regex> where place is one of: 'url', 'ref-url', 'status', 'content'. "
+                              "If multiple filters are given the OR rule is in"))
 
     args = parser.parse_args()
 
     return args
 
 
+def parse_filter(filter_str):
+    try:
+        filter_type, filter_value = filter_str.split("=", 1)
+        if filter_type not in ['url', 'ref-url', 'ref-orig-type', 'status', 'content']:
+            return None
+        filter_regex = re.compile(filter_value)
+        return (filter_type, filter_regex)
+    except Exception:
+        return None
+
+
 def main():
     args = get_args()
-    main_url = args.url
 
-    cr_ob = Crawler(main_url)
+    url = args.url
+
+    # Parse output filters
+    output_filters = []
+    if(args.output_filter):
+        for i in args.output_filter:
+            f = parse_filter(i)
+            if(f):
+                output_filters.append(f)
+            else:
+                print >> sys.stderr, "Warning: --output-filter %s discarded" % i
+
+    output_fields = args.output_fields
+
+    extract_options = args.extract_option
+
+    # Parse go filter
+    try:
+        go_regex = re.compile(args.go_regex)
+    except Exception:
+        print >> sys.stderr, "Warning: Discarding --go-filter %s" % args.go_filter_regex
+        go_regex = re.compile("^.+$")
+
+    # Parse visited filtter
+    try:
+        visit_regex = re.compile(args.visit_regex)
+    except Exception:
+        print >> sys.stderr, "Warning: Discarding --visit-regex"
+        visit_regex = re.compile("^.+$")
+
+    session_file = args.session_file
+
+    cr_ob = Crawler(url,
+                    UrlParser(extract_options),
+                    Session(session_file,
+                            visit_regex=visit_regex),
+                    go_regex=go_regex,
+                    )
     for url_info in cr_ob.start_crawl():
         if(url_info.from_domain):
             print "%s        |        %s" % (url_info.url, url_info.status_msg)
 
 
-if(__name__ == "__main__"):
+if __name__ == '__main__':
     main()

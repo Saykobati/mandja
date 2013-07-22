@@ -20,12 +20,12 @@ from urlparse import urlparse, ParseResult
 import requests
 
 from .common import removeWWW
-from .parser import get_urls, is_content_type_text
+from .parser import is_content_type_text
 
 
 HeadData = namedtuple("HeadData", ["code", "headers", "error", "error_msg"])
 ContentData = namedtuple("ContentData", ["code", "headers", "error", "error_msg", "content", "final_url"])
-URLInfoData = namedtuple("URLInfoData", ["url", "status_msg", "from_domain"])
+URLInfoData = namedtuple("URLInfoData", ["url", "status", "from_domain"])
 
 
 class CrawlerError(StandardError):
@@ -41,7 +41,7 @@ class CrawlerContentError(CrawlerError):
 
 
 class Crawler(object):
-    def __init__(self, start_url, options={}):
+    def __init__(self, start_url, url_parser, session_mng, go_regex, do_head_ping=False):
         if(not isinstance(start_url, ParseResult)):
             start_url = urlparse(start_url)
             if(not start_url.scheme):
@@ -68,9 +68,13 @@ class Crawler(object):
 
         self._request = requests.Session()
 
-        self._start_netlocs = set()
         self._checked_url_pool = set()
         self._not_checked_url_pool = set()
+
+        self._url_parser = url_parser
+        self._session = session_mng
+        self.go_regex = go_regex
+        self.do_head_ping = do_head_ping
 
     def _url_to_abs_url(self, url_str, default_netloc):
         us = url_str.replace("&amp;", "&")
@@ -85,7 +89,7 @@ class Crawler(object):
 
     def _do_proceed_traverse(self, url_str):
         url = urlparse(url_str, self._start_scheme)
-        if url.netloc in self._start_netlocs:
+        if url.netloc in self._session.start_domains and self.go_regex.match(url.geturl()):
             return True
         else:
             return False
@@ -148,37 +152,42 @@ class Crawler(object):
 
         start_page_final_netloc = urlparse(start_page.final_url).netloc
 
-        self._start_netlocs.add(start_page_final_netloc)
-        self._start_netlocs.add(removeWWW(start_page_final_netloc))
+        self._session.add_start_domain(start_page_final_netloc)
+        self._session.add_start_domain(removeWWW(start_page_final_netloc))
 
         if 'content-type' in start_page.headers and is_content_type_text(start_page.headers['content-type']):
             page = start_page
 
             while True:
                 if page and not page.error and ('content-type' in page.headers) and is_content_type_text(page.headers['content-type']):
-                    page_urls = get_urls(page.content)
                     page_netloc = urlparse(page.final_url).netloc
-                    for i in page_urls:
+
+                    for i in self._url_parser.url_gen(page.content):
                         next_url = self._url_to_abs_url(i, page_netloc)
-                        if not next_url in self._checked_url_pool:
-                            self._not_checked_url_pool.add(next_url)
-                if self._not_checked_url_pool:
-                    next_to_visit = self._not_checked_url_pool.pop()
-                    failed = False
+
+                        self._session.add_url(next_url)
+
+                next_to_visit = self._session.next_url()
+                # import pudb; pudb.set_trace()
+                if next_to_visit:
                     if self._do_proceed_traverse(next_to_visit):
-                        from_domain = True
                         page = self.get_content(next_to_visit)
-                        failed = True if page.error else False
-                        status = ("%i" % page.code) if not failed else 'Invalid URL'
+                        status = page.code if not page.error else None
+                        from_domain = True
                     else:
                         from_domain = False
                         page = None
-                        head = self.head_ping(next_to_visit)
-                        status = ("%i" % head.code) if not head.error else 'Invalid URL'
+                        if self.do_head_ping:
+                            head = self.head_ping(next_to_visit)
+                            status = head.code if not head.error else None
+                        else:
+                            status = None
 
-                    yield URLInfoData(url=next_to_visit, status_msg=status, from_domain=from_domain)
+                    url_data = URLInfoData(url=next_to_visit, status=status, from_domain=from_domain)
 
-                    self._checked_url_pool.add(next_to_visit)
+                    yield url_data
+
+                    self._session.add_visited_url(url_data.url)
                 else:
                     break
 
