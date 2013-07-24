@@ -2,6 +2,7 @@
 #-*- coding: utf-8 -*-
 
 
+import signal
 import sys
 import argparse
 import tempfile
@@ -72,7 +73,13 @@ def parse_filter(filter_str):
         return None
 
 
+def kint_sig_handler(signal, frame):
+    print 'You pressed Ctrl+C!'
+    sys.exit(0)
+
+
 def main():
+    signal.signal(signal.SIGINT, kint_sig_handler)
     args = get_args()
 
     url = args.url
@@ -93,29 +100,30 @@ def main():
 
     # Parse go filter
     try:
-        go_regex = re.compile(args.go_regex)
+        go_regex = args.go_regex
+        re.compile(go_regex)
     except Exception:
         print >> sys.stderr, "Warning: Discarding --go-filter %s" % args.go_filter_regex
-        go_regex = re.compile("^.+$")
+        go_regex = "^.+$"
 
     # Parse visited filtter
+    visit_regex = args.visit_regex
     try:
-        visit_regex = re.compile(args.visit_regex)
+        re.compile(visit_regex)
     except Exception:
         print >> sys.stderr, "Warning: Discarding --visit-regex"
-        visit_regex = re.compile("^.+$")
+        visit_regex = "^.+$"
 
     session_file = args.session_file
 
     cr_ob = Crawler(url,
                     UrlParser(extract_options),
-                    Session(session_file,
+                    Session(session_file=session_file,
                             visit_regex=visit_regex),
-                    go_regex=go_regex,
-                    )
+                    go_regex=go_regex)
     for url_info in cr_ob.start_crawl():
         if(url_info.from_domain):
-            print "%s        |        %s" % (url_info.url, url_info.status_msg)
+            print "%s        |        %s" % (url_info.url, url_info.status)
 
 
 if __name__ == '__main__':

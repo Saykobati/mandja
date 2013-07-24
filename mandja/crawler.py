@@ -15,6 +15,7 @@
 # See the GNU General Public License for more details.
 
 
+import re
 from collections import namedtuple
 from urlparse import urlparse, ParseResult
 import requests
@@ -42,6 +43,11 @@ class CrawlerContentError(CrawlerError):
 
 class Crawler(object):
     def __init__(self, start_url, url_parser, session_mng, go_regex, do_head_ping=False):
+        self._url_parser = url_parser
+        self._session = session_mng
+
+        start_url = start_url if not self._session.get_restore_url() else self._session.get_restore_url()
+
         if(not isinstance(start_url, ParseResult)):
             start_url = urlparse(start_url)
             if(not start_url.scheme):
@@ -71,16 +77,16 @@ class Crawler(object):
         self._checked_url_pool = set()
         self._not_checked_url_pool = set()
 
-        self._url_parser = url_parser
-        self._session = session_mng
-        self.go_regex = go_regex
+        self.go_regex_pattern = go_regex
+        self.go_regex = re.compile(go_regex)
+
         self.do_head_ping = do_head_ping
 
     def _url_to_abs_url(self, url_str, default_netloc):
         us = url_str.replace("&amp;", "&")
         url = urlparse(us, self._start_scheme)
 
-        if not url.netloc:
+        if not url.netloc and url.scheme in ("http", "https"):
             netloc = default_netloc
         else:
             netloc = url.netloc
@@ -168,12 +174,13 @@ class Crawler(object):
                         self._session.add_url(next_url)
 
                 next_to_visit = self._session.next_url()
-                # import pudb; pudb.set_trace()
+
                 if next_to_visit:
                     if self._do_proceed_traverse(next_to_visit):
                         page = self.get_content(next_to_visit)
                         status = page.code if not page.error else None
                         from_domain = True
+                        self._session.set_restore_url(next_to_visit)
                     else:
                         from_domain = False
                         page = None
