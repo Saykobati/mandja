@@ -16,8 +16,8 @@ from mandja.session import Session
 def get_args():
     parser = argparse.ArgumentParser(description=('A little recursive crawler. '
                                                   'It is able to list all URLs it has visited. '
-                                                  'You reuse the connection via Keep-Connection when'
-                                                  'crawling on the set domain and use different connections'
+                                                  'You reuse the connection via Keep-Connection when '
+                                                  'crawling on the set domain and use different connections '
                                                   'for the head ping of URLs on different domains.'),
                                      epilog='Copyright (C) 2011 MrGray')
     parser.add_argument("url",
@@ -26,7 +26,7 @@ def get_args():
                         help=("If a session file is used - all the data from URL processing is saved "
                               "including the current state. If the crawling is interrupted you can "
                               "continue later using the session file. When crawleing has finished, "
-                              "this state is marked also. By using the file you can filter/parse/extract data"
+                              "this state is marked also. By using the file you can filter/parse/extract data "
                               "related to the crawled URL offline."))
     parser.add_argument("-g", "--go-regex",
                         default="^.+$",
