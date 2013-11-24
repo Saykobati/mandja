@@ -16,6 +16,7 @@
 
 
 import re
+from logging import debug, info, warn, error, critical
 from collections import namedtuple
 from urlparse import urlparse, ParseResult
 import requests
@@ -42,9 +43,11 @@ class CrawlerContentError(CrawlerError):
 
 
 class Crawler(object):
-    def __init__(self, start_url, url_parser, session_mng, go_regex, do_head_ping=False):
+    def __init__(self, start_url, url_parser, session_mng, go_regex, do_head_ping=False, httpauth_creds=None):
         self._url_parser = url_parser
         self._session = session_mng
+
+        self.httpauth_creds = httpauth_creds
 
         start_url = start_url if not self._session.get_restore_url() else self._session.get_restore_url()
 
@@ -82,6 +85,16 @@ class Crawler(object):
 
         self.do_head_ping = do_head_ping
 
+    def _get_htauth_creds(self, netloc):
+        try:
+            c = self.httpauth_creds.get(netloc, {})
+            u = c.get("username", None)
+            p = c.get("password", None)
+            return (u, p) if u and p else None
+        except Exception, err:
+            warn("Could not retreive credentials - probably bad httpauth_creds format: %s" % str(err))
+            return None
+
     def _url_to_abs_url(self, url_str, default_netloc):
         us = url_str.replace("&amp;", "&")
         url = urlparse(us, self._start_scheme)
@@ -107,8 +120,10 @@ class Crawler(object):
         error = False
         err_msg = None
 
+        creds = self._get_htauth_creds(url.netloc)
+
         try:
-            resp = self._request.head(url.geturl(), headers=self._default_headers)
+            resp = self._request.head(url.geturl(), headers=self._default_headers, verify=False, auth=creds)
             code = resp.status_code
             headers = resp.headers
         except Exception, e:
@@ -127,8 +142,10 @@ class Crawler(object):
         error = False
         err_msg = None
 
+        creds = self._get_htauth_creds(url.netloc)
+
         try:
-            resp = self._request.get(url.geturl(), allow_redirects=follow_redirect)
+            resp = self._request.get(url.geturl(), allow_redirects=follow_redirect, verify=False, auth=creds)
 
             final_url = resp.url
             headers = resp.headers
