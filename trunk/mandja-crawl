@@ -24,7 +24,7 @@ def get_args():
                         help="URL to crawl")
     parser.add_argument("-a", "--httpauth-creds",
                         help=("HTTP authentication credentials passed as a json string: "
-                              "-a \"{'<netloc>': {'username': '<user>', 'password': '<password>'}}\""))
+                              "-a '{\"<netloc>\": {\"username\": \"<user>\", \"password\": \"<password>\"}}'"))
     parser.add_argument("-s", "--session-file",
                         help=("If a session file is used - all the data from URL processing is saved "
                               "including the current state. If the crawling is interrupted you can "
