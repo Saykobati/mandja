@@ -53,26 +53,10 @@ def get_args():
                         choices=["url", "status", "from_main_domain"],
                         help=("This presents the information that is outputed on the screen. "
                               "Default is: ['url', 'status']"))
-    parser.add_argument("-f", "--output-filter",
-                        action="append",
-                        help=("You can add filters for the screen output by specifying them in "
-                              "the format: place=<regex> where place is one of: 'url', 'ref-url', 'status', 'content'. "
-                              "If multiple filters are given the OR rule is in"))
 
     args = parser.parse_args()
 
     return args
-
-
-def parse_filter(filter_str):
-    try:
-        filter_type, filter_value = filter_str.split("=", 1)
-        if filter_type not in ['url', 'ref-url', 'ref-orig-type', 'status', 'content']:
-            return None
-        filter_regex = re.compile(filter_value)
-        return (filter_type, filter_regex)
-    except Exception:
-        return None
 
 
 def kint_sig_handler(signal, frame):
@@ -94,16 +78,6 @@ def main():
             print >> sys.stderr, "Warning: --httpauth-creds discarded, probably wrong JSON representation - %s for %s" % (str(err), httpauth_creds_str)
     else:
         httpauth_creds = {}
-
-    # Parse output filters
-    output_filters = []
-    if(args.output_filter):
-        for i in args.output_filter:
-            f = parse_filter(i)
-            if(f):
-                output_filters.append(f)
-            else:
-                print >> sys.stderr, "Warning: --output-filter %s discarded" % i
 
     output_fields = args.output_fields if args.output_fields else ["url", "status"]
 
@@ -133,6 +107,7 @@ def main():
                             visit_regex=visit_regex),
                     go_regex=go_regex,
                     httpauth_creds=httpauth_creds)
+
     for url_info in cr_ob.start_crawl():
         if(url_info.from_domain):
             s = []
